@@ -1,5 +1,6 @@
 package br.com.mekki_session.service;
 
+import br.com.mekki_session.client.RoomClient;
 import br.com.mekki_session.entity.Session;
 import br.com.mekki_session.repository.SessionRepository;
 import br.com.mekki_session.to.SessionTO;
@@ -11,16 +12,18 @@ import java.util.Date;
 import java.util.List;
 
 @Component
-public class DefaultSessionService implements SessionService{
+public class DefaultSessionService implements SessionService {
 
     @Autowired
     private SessionRepository repository;
 
+    @Autowired
+    private RoomClient roomClient;
+
 
     @Override
     public void save(SessionTO sessionTO) {
-        isRoomAvailable(sessionTO.getRoomId(),sessionTO.getDate(), sessionTO.getStartTime(), sessionTO.getEndTime());
-        //todo: aqui tenho que fazer uma chamada ao servico de room para verificar a disponibilidade e adicionar validacoes talvez
+        validateInsert(sessionTO);
         repository.save(convertToSession(sessionTO));
     }
 
@@ -45,7 +48,7 @@ public class DefaultSessionService implements SessionService{
         return repository.findAll();
     }
 
-    public boolean isRoomAvailable(Integer roomId, Date date, LocalTime start, LocalTime end) {
+    public boolean checkRoomAvailability(Integer roomId, Date date, LocalTime start, LocalTime end) {
         List<Session> sessions = repository.findByroomIdAndDate(roomId, date);
 
         for (Session s : sessions) {
@@ -57,8 +60,19 @@ public class DefaultSessionService implements SessionService{
         return true;
     }
 
+    private boolean validateInsert(SessionTO sessionTO) {
+        if (!roomClient.isAvailable(sessionTO.getRoomId())) {
+            throw new RuntimeException("sala impedida de Reserva");
+        }
 
-    private Session convertToSession(SessionTO sessionTO){
+        checkRoomAvailability(sessionTO.getRoomId(), sessionTO.getDate(),
+                sessionTO.getStartTime(), sessionTO.getEndTime());
+
+        return true;
+    }
+
+
+    private Session convertToSession(SessionTO sessionTO) {
         Session session = new Session();
         session.setDate(sessionTO.getDate());
         session.setRoomId(sessionTO.getRoomId());
