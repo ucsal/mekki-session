@@ -19,7 +19,8 @@ public class SessionController {
 
 
     @PostMapping("/save")
-    public ResponseEntity saveSession(@RequestBody SessionTO sessionTO){
+    public ResponseEntity saveSession(@RequestBody SessionTO sessionTO, @RequestHeader("X-User-Id") String userId){
+        System.out.println(userId);
         service.save(sessionTO);
         return ResponseEntity.ok("funcionou");
     }
